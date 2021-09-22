@@ -94,7 +94,7 @@ func TestDelete(t *testing.T) {
 	var word, definition = "test", "this is just a test"
 	dictionary := Dictionary{word: definition}
 
-	dictionary.Delete("word")
+	dictionary.Delete("test")
 
 	_, err := dictionary.Search(word)
 	if err != ErrNotFound {
