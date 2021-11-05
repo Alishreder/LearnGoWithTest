@@ -70,13 +70,6 @@ func TestWalk(t *testing.T) {
 			},
 			[]string{"London", "Paris"},
 		},
-		{"Map",
-			map[string]string{
-				"City": "London",
-				"Name": "Paris",
-			},
-			[]string{"London", "Paris"},
-		},
 	}
 
 	for _, test := range cases {
@@ -92,23 +85,72 @@ func TestWalk(t *testing.T) {
 		})
 	}
 
-	expected := "Chris"
-	var got []string
+	t.Run("with maps", func(t *testing.T) {
+		aMap := map[string]string{
+			"City": "London",
+			"Name": "Paris",
+		}
 
-	x := struct {
-		Name string
-	}{expected}
+		var got []string
 
-	walk(x, func(input string) {
-		got = append(got, input)
+		walk(aMap, func(input string) {
+			got = append(got, input)
+		})
+
+		assertContains(t, got, "London")
+		assertContains(t, got, "Paris")
 	})
 
-	if len(got) != 1 {
-		t.Errorf("wrong number of function calls, got %d want %d", len(got), 1)
+	t.Run("with channels", func(t *testing.T) {
+		aChannel := make(chan Profile)
+
+		go func() {
+			aChannel <- Profile{19, "Paris"}
+			aChannel <- Profile{39, "London"}
+			close(aChannel)
+		}()
+
+		var got []string
+		want := []string{"Paris", "London"}
+
+		walk(aChannel, func(input string) {
+			got = append(got, input)
+		})
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+
+	t.Run("with function", func(t *testing.T) {
+		aFunc := func() (Profile, Profile) {
+			return Profile{19, "Paris"}, Profile{39, "London"}
+		}
+
+		var got []string
+		want := []string{"Paris", "London"}
+
+		walk(aFunc, func(input string) {
+			got = append(got, input)
+		})
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got %v, want %v", got, want)
+		}
+	})
+}
+
+func assertContains(t *testing.T, haystack []string, needle string) {
+	t.Helper()
+	var contains bool
+	for _, x := range haystack {
+		if x == needle {
+			contains = true
+		}
 	}
 
-	if got[0] != expected {
-		t.Errorf("got %s, want %s", got[0], expected)
+	if !contains {
+		t.Errorf("expected %+v, to cotain %q, but it didn't", haystack, needle)
 	}
 
 }
